@@ -1,0 +1,4 @@
+# MiaForge 运行依赖
+# 默认（digits 数据集）需要 scikit-learn；离线兜底仅需 numpy。
+numpy>=1.26
+scikit-learn>=1.5.0

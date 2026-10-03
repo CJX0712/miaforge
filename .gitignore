@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 测试 / 缓存
+.pytest_cache/
+.ruff_cache/
+
+# 临时扫描与诊断产物
+_sweep*.py
+_sweep*_out.txt
+_diag*.py
+_digits_test.py
+
+# 本地基准产物（CI 另写 benchmark_ci.json）
+examples/benchmark_ci.json
+examples/benchmark_docker.json
+
+# 编辑器
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,162 @@
+{
+  "system": "MiaForge",
+  "config": {
+    "seed": 0,
+    "n_train": 200,
+    "n_nonmember": 200,
+    "n_features": 64,
+    "n_classes": 10,
+    "snr": 1.2,
+    "class_spread": 1.8,
+    "member_label_noise": 0.0,
+    "dataset": "digits",
+    "hidden": [
+      32
+    ],
+    "epochs": 80,
+    "lr": 0.02,
+    "n_shadows": 10,
+    "shadow_pool": 3000,
+    "shadow_hidden": [
+      16
+    ],
+    "shadow_epochs": 80,
+    "n_seeds": 3,
+    "base_seed": 0,
+    "gate_delta": 0.02
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "methods": {
+        "loss_threshold": 0.6222,
+        "shadow_all": 0.7157,
+        "shadow_loss_only": 0.6222,
+        "shadow_no_correct": 0.7198
+      },
+      "accuracy": {
+        "loss_threshold": 0.66,
+        "shadow_all": 0.635,
+        "shadow_loss_only": 0.66,
+        "shadow_no_correct": 0.63
+      },
+      "target_train_loss": 0.0004,
+      "target_eval_loss": 0.5616,
+      "overfit_gap": 0.5612
+    },
+    {
+      "seed": 1,
+      "methods": {
+        "loss_threshold": 0.5056,
+        "shadow_all": 0.5829,
+        "shadow_loss_only": 0.5056,
+        "shadow_no_correct": 0.5815
+      },
+      "accuracy": {
+        "loss_threshold": 0.58,
+        "shadow_all": 0.58,
+        "shadow_loss_only": 0.58,
+        "shadow_no_correct": 0.575
+      },
+      "target_train_loss": 0.0005,
+      "target_eval_loss": 0.9606,
+      "overfit_gap": 0.9601
+    },
+    {
+      "seed": 2,
+      "methods": {
+        "loss_threshold": 0.6483,
+        "shadow_all": 0.6538,
+        "shadow_loss_only": 0.6483,
+        "shadow_no_correct": 0.6586
+      },
+      "accuracy": {
+        "loss_threshold": 0.64,
+        "shadow_all": 0.61,
+        "shadow_loss_only": 0.64,
+        "shadow_no_correct": 0.62
+      },
+      "target_train_loss": 0.0003,
+      "target_eval_loss": 1.0636,
+      "overfit_gap": 1.0633
+    }
+  ],
+  "aggregate": {
+    "loss_threshold": {
+      "mean": 0.592,
+      "std": 0.062,
+      "n": 3
+    },
+    "shadow_all": {
+      "mean": 0.6508,
+      "std": 0.0543,
+      "n": 3
+    },
+    "shadow_loss_only": {
+      "mean": 0.592,
+      "std": 0.062,
+      "n": 3
+    },
+    "shadow_no_correct": {
+      "mean": 0.6533,
+      "std": 0.0566,
+      "n": 3
+    }
+  },
+  "gate": {
+    "baseline": "loss_threshold",
+    "flagship": "shadow_all",
+    "baseline_auc_mean": 0.592,
+    "flagship_auc_mean": 0.6508,
+    "delta": 0.0588,
+    "gate_delta_required": 0.02,
+    "significant": true,
+    "passed": true
+  },
+  "ablation": {
+    "shadow_loss_only": {
+      "auc_mean": 0.592,
+      "auc_std": 0.062,
+      "delta_vs_flagship": -0.0588
+    },
+    "shadow_no_correct": {
+      "auc_mean": 0.6533,
+      "auc_std": 0.0566,
+      "delta_vs_flagship": 0.0025
+    }
+  },
+  "failures": [
+    {
+      "type": "false_negative_member",
+      "desc": "真实成员被攻击判为非成员",
+      "loss": 0.0001,
+      "confidence": 0.9999,
+      "correct": 1,
+      "cause": "该成员样本处于类间重叠区或含噪声，目标模型未充分记忆，攻击按特征判为非成员"
+    },
+    {
+      "type": "false_positive_nonmember",
+      "desc": "真实非成员被攻击判为成员",
+      "loss": 0.0073,
+      "confidence": 0.9927,
+      "correct": 1,
+      "cause": "该非成员恰为易分样本，loss 与置信度接近典型成员，攻击难以区分"
+    },
+    {
+      "type": "high_loss_member",
+      "desc": "成员中 loss 最高者",
+      "loss": 0.0031,
+      "confidence": 0.9969,
+      "correct": 1,
+      "cause": "成员样本含高噪声或位于决策边界，目标模型似未记住 → 攻击判为非成员"
+    },
+    {
+      "type": "low_loss_nonmember",
+      "desc": "非成员中 loss 最低者",
+      "loss": 0.0,
+      "confidence": 1.0,
+      "correct": 1,
+      "cause": "非成员恰为易分样本，loss 接近典型成员，攻击典型难例"
+    }
+  ]
+}
