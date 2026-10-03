@@ -1,0 +1,34 @@
+[project]
+name = "miaforge"
+version = "0.1.1"
+description = "MiaForge - Membership Inference Attack benchmark (Shokri shadow models vs Yeom loss-threshold)"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "晨星" }]
+
+[tool.ruff]
+# 固定 target-version，避免 ruff 因自动探测宿主 Python 而产生跨版本结论漂移。
+target-version = "py311"
+# 沿用 ruff 默认行宽 88（与 `ruff format` 已写入的排版一致，不另设，避免凭空引入 E501）
+
+[tool.ruff.lint]
+# 显式声明规则集：ruff 升级后新规则进入默认集时，CI 会稳定复现同一套判据。
+# （不写 select 时依赖版本默认值，曾导致同一份代码在不同 ruff 版本下结论不一致）
+select = [
+    "E",   # pycodestyle 错误
+    "W",   # pycodestyle 警告
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "BLE", # flake8-blind-except
+    "SIM", # flake8-simplify
+    "PLW", # pylint 警告子集
+    "RUF", # ruff 自有规则
+]
+
+# RUF001/002/003 标记「歧义 Unicode 字符」（全角逗号/冒号/括号），
+# 本仓库注释与文档字符串为中文，全角标点属正常书写，故显式忽略。
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

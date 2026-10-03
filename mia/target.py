@@ -63,15 +63,13 @@ class NumpyMLP:
         for i in range(len(self.Ws)):
             z = A @ self.Ws[i] + self.bs[i]
             pre.append(z)
-            if i < len(self.Ws) - 1:
-                A = self._relu(z)
-            else:
-                A = self._softmax(z)
+            # 末层 softmax，其余层 ReLU
+            A = self._relu(z) if i < len(self.Ws) - 1 else self._softmax(z)
             acts.append(A)
         return acts, pre
 
     # —— 训练 ——
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "NumpyMLP":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> NumpyMLP:
         if X.ndim != 2:
             raise TargetError("X 必须是二维")
         n, d = X.shape
@@ -79,7 +77,9 @@ class NumpyMLP:
             raise TargetError("X/y 样本数不一致")
         rng = np.random.default_rng(self.seed)
         layers = [d, *self.hidden, self.n_classes]
-        self.Ws = [self._xavier(rng, layers[i], layers[i + 1]) for i in range(len(layers) - 1)]
+        self.Ws = [
+            self._xavier(rng, layers[i], layers[i + 1]) for i in range(len(layers) - 1)
+        ]
         self.bs = [np.zeros(layers[i + 1]) for i in range(len(layers) - 1)]
 
         self._means = X.mean(axis=0)
@@ -91,14 +91,14 @@ class NumpyMLP:
 
         betas = (0.9, 0.999)
         eps = 1e-8
-        t = 0
+        # Adam 时刻计数从 1 开始（偏差修正项 betas**t 要求首次更新用 t=1）
         mW = [np.zeros_like(w) for w in self.Ws]
         vW = [np.zeros_like(w) for w in self.Ws]
         mb = [np.zeros_like(b) for b in self.bs]
         vb = [np.zeros_like(b) for b in self.bs]
 
         # 全批量 Adam（向量化，逐 epoch 一次前向/反向；小样本下充分过拟合）
-        for e in range(self.epochs):
+        for t in range(1, self.epochs + 1):
             acts, pre = self._forward(Xz)
             dZ = acts[-1] - Yoh  # (n, K) 交叉熵 + softmax 梯度
             dA = dZ
@@ -110,7 +110,6 @@ class NumpyMLP:
                 gb.insert(0, dA.sum(axis=0))
                 if li > 0:
                     dA = (dA @ self.Ws[li].T) * self._relu_deriv(pre[li - 1])
-            t += 1
             for li in range(len(self.Ws)):
                 mW[li] = betas[0] * mW[li] + (1 - betas[0]) * gW[li]
                 vW[li] = betas[1] * vW[li] + (1 - betas[1]) * (gW[li] ** 2)

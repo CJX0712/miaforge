@@ -11,10 +11,11 @@ venv:
 
 install:
 	$(VENV)/bin/pip install -r requirements.lock.txt
-	$(VENV)/bin/pip install pytest ruff
+	$(VENV)/bin/pip install pytest ruff==0.16.10
 
 lint:
-	$(VENV)/bin/ruff check . || true
+	$(VENV)/bin/ruff check .
+	$(VENV)/bin/ruff format --check .
 
 test:
 	$(VENV)/bin/pytest -q

@@ -50,9 +50,10 @@ class SyntheticMiaGenerator:
         return np.asarray(centers, dtype=np.float64)
 
     def _class_noise_scales(self, rng: np.random.Generator) -> np.ndarray:
-        """每类固有难度不同（后类更噪声）→ 制造「类难度混淆」，使原始全局 loss 阈值次优，
-        而用完整概率向量（类条件校准）的攻击可学出逐类边界，成为真实增益来源。
-        确定性（由 seed 决定）。class_spread 控制跨度（0 = 等难度）。"""
+        """每类固有难度不同（后类更噪声）→ 制造「类难度混淆」，
+        使原始全局 loss 阈值次优，而用完整概率向量（类条件校准）的攻击
+        可学出逐类边界，成为真实增益来源。确定性（由 seed 决定）。
+        class_spread 控制跨度（0 = 等难度）。"""
         if self.n_classes <= 1:
             return np.ones(1, dtype=np.float64)
         frac = np.linspace(0.0, 1.0, self.n_classes)

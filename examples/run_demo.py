@@ -34,6 +34,7 @@ def _core_numbers(report: dict) -> dict:
 
 def main(argv=None) -> int:
     import argparse
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="examples/benchmark.json")
     ap.add_argument("--n-seeds", dest="n_seeds", type=int, default=None)
@@ -71,7 +72,10 @@ def main(argv=None) -> int:
     for name, a in r1["aggregate"].items():
         print(f"{name:<22}{a['mean']:>10.4f}{a['std']:>10.4f}")
     g = r1["gate"]
-    print(f"\nGATE delta={g['delta']} (>= {g['gate_delta_required']}) significant={g['significant']} PASSED={g['passed']}")
+    print(
+        f"\nGATE delta={g['delta']} (>= {g['gate_delta_required']}) "
+        f"significant={g['significant']} PASSED={g['passed']}"
+    )
     print(f"\nfailures collected: {len(r1['failures'])}")
     print(f"wrote {args.out}")
 

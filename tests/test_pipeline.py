@@ -8,10 +8,10 @@ from __future__ import annotations
 import numpy as np
 
 from core.config import MiaConfig
-from pipeline.pipeline import benchmark
+from data.generator import SyntheticMiaGenerator
 from mia.attacks import build_features, make_attacks
 from mia.target import NumpyMLP
-from data.generator import SyntheticMiaGenerator
+from pipeline.pipeline import benchmark
 
 
 def test_determinism_digits():
@@ -26,8 +26,16 @@ def test_determinism_digits():
 
 def test_offline_synthetic_runs():
     """离线兜底：纯 numpy 合成数据路径不依赖 sklearn，可正常运行并产出报告。"""
-    cfg = MiaConfig(dataset="synthetic", n_train=200, n_nonmember=200,
-                   n_features=20, n_classes=10, n_shadows=5, n_seeds=2, base_seed=0)
+    cfg = MiaConfig(
+        dataset="synthetic",
+        n_train=200,
+        n_nonmember=200,
+        n_features=20,
+        n_classes=10,
+        n_shadows=5,
+        n_seeds=2,
+        base_seed=0,
+    )
     rep = benchmark(cfg)
     assert set(rep["aggregate"].keys()) >= {"loss_threshold", "shadow_all"}
     assert 0.0 <= rep["gate"]["flagship_auc_mean"] <= 1.0
@@ -37,13 +45,18 @@ def test_attacks_contract():
     """攻击集合契约：名称固定、loss 阈值基线 score = -loss。"""
     atks = make_attacks(seed=0, n_classes=10)
     names = [a.name for a in atks]
-    assert names == ["loss_threshold", "shadow_all", "shadow_loss_only", "shadow_no_correct"]
+    assert names == [
+        "loss_threshold",
+        "shadow_all",
+        "shadow_loss_only",
+        "shadow_no_correct",
+    ]
 
     gen = SyntheticMiaGenerator(20, 10, 1.2, 1.8, seed=0)
     X, y = gen.generate(50)
     m = NumpyMLP(hidden=(16,), n_classes=10, epochs=10, seed=1).fit(X, y)
     feats = build_features(m, X, y)
-    thr = [a for a in atks if a.name == "loss_threshold"][0]
+    thr = next(a for a in atks if a.name == "loss_threshold")
     sc = thr.score(feats)
     np.testing.assert_allclose(sc, -feats[:, 0], atol=1e-9)
 

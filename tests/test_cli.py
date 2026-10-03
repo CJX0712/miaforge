@@ -15,8 +15,15 @@ CLI = str(REPO / "cli.py")
 
 
 def _run(args):
-    return subprocess.run([sys.executable, CLI, *args], cwd=str(REPO),
-                          capture_output=True, text=True, timeout=300)
+    # check=False：由各用例自行断言 returncode，避免 subprocess 抛异常掩盖真实输出
+    return subprocess.run(
+        [sys.executable, CLI, *args],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
 
 
 def test_cli_run_smoke():

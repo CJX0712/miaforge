@@ -34,7 +34,9 @@ def build_features(target, X: np.ndarray, y: np.ndarray) -> np.ndarray:
     sp = np.sort(p, axis=1)
     margin = sp[:, -1] - sp[:, -2]
     correct = (p.argmax(axis=1) == y.astype(int)).astype(np.float64)
-    return np.column_stack([loss, confidence, entropy, margin, correct, p]).astype(np.float64)
+    return np.column_stack([loss, confidence, entropy, margin, correct, p]).astype(
+        np.float64
+    )
 
 
 # ——————————————————— 纯 numpy 逻辑回归 ———————————————————
@@ -47,7 +49,7 @@ class NumpyLogistic:
         self.seed = seed
         self.w: np.ndarray | None = None
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> "NumpyLogistic":
+    def fit(self, X: np.ndarray, y: np.ndarray) -> NumpyLogistic:
         Xb = np.hstack([np.asarray(X, dtype=np.float64), np.ones((X.shape[0], 1))])
         y = np.asarray(y, dtype=np.float64).ravel()
         w = np.zeros(Xb.shape[1])
@@ -91,7 +93,14 @@ class ShadowAttack:
     不含成员标签，无泄漏），影子与目标特征在同一尺度空间，避免分布错位导致攻击劣于基线。
     """
 
-    def __init__(self, name: str, cols: list[int], seed: int = 0, lr: float = 0.05, epochs: int = 300):
+    def __init__(
+        self,
+        name: str,
+        cols: list[int],
+        seed: int = 0,
+        lr: float = 0.05,
+        epochs: int = 300,
+    ):
         self.name = name
         self.cols = list(cols)
         self.seed = seed
@@ -104,7 +113,9 @@ class ShadowAttack:
     def _standardize(self, X: np.ndarray) -> np.ndarray:
         if self._mu is None or self._sd is None:
             raise AttackError("未设置标准化统计量")
-        return (np.asarray(X, dtype=np.float64) - self._mu[self.cols]) / self._sd[self.cols]
+        return (np.asarray(X, dtype=np.float64) - self._mu[self.cols]) / self._sd[
+            self.cols
+        ]
 
     def set_standardize(self, ref: np.ndarray) -> None:
         r = np.asarray(ref, dtype=np.float64)
@@ -132,10 +143,14 @@ COL_LOSS, COL_CONF, COL_ENT, COL_MARGIN, COL_CORRECT = range(5)
 def make_attacks(seed: int = 0, n_classes: int = 10) -> list:
     """构造旗舰 + 基线 + 消融攻击集合。"""
     prob_cols = list(range(5, 5 + n_classes))
-    full = [COL_LOSS, COL_CONF, COL_ENT, COL_MARGIN, COL_CORRECT] + prob_cols
+    full = [COL_LOSS, COL_CONF, COL_ENT, COL_MARGIN, COL_CORRECT, *prob_cols]
     return [
         LossThresholdAttack(),
         ShadowAttack("shadow_all", full, seed=seed + 1),
         ShadowAttack("shadow_loss_only", [COL_LOSS], seed=seed + 2),
-        ShadowAttack("shadow_no_correct", [COL_LOSS, COL_CONF, COL_ENT, COL_MARGIN] + prob_cols, seed=seed + 3),
+        ShadowAttack(
+            "shadow_no_correct",
+            [COL_LOSS, COL_CONF, COL_ENT, COL_MARGIN, *prob_cols],
+            seed=seed + 3,
+        ),
     ]

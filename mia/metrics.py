@@ -40,7 +40,9 @@ def roc_auc(y_true: np.ndarray, scores: np.ndarray) -> float:
     return float(auc)
 
 
-def balanced_accuracy_at_threshold(scores: np.ndarray, y_true: np.ndarray, threshold: float) -> float:
+def balanced_accuracy_at_threshold(
+    scores: np.ndarray, y_true: np.ndarray, threshold: float
+) -> float:
     """给定阈值（score>=threshold 判为成员）的均衡准确率。"""
     pred = (np.asarray(scores) >= threshold).astype(np.float64)
     y = np.asarray(y_true, dtype=np.float64)
@@ -51,7 +53,9 @@ def balanced_accuracy_at_threshold(scores: np.ndarray, y_true: np.ndarray, thres
     return float(tp / p * 0.5 + tn / n * 0.5)
 
 
-def optimal_threshold_balanced_accuracy(scores: np.ndarray, y_true: np.ndarray) -> float:
+def optimal_threshold_balanced_accuracy(
+    scores: np.ndarray, y_true: np.ndarray
+) -> float:
     """在训练集上搜索使均衡准确率最高的阈值（仅用训练侧，避免泄漏到评测侧）。"""
     s = np.asarray(scores, dtype=np.float64)
     # 候选阈值：各 score 与相邻中值

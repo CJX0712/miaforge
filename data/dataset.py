@@ -50,14 +50,18 @@ class MiaData:
         self.n_classes = int(np.unique(self.y).size)
 
     @classmethod
-    def from_name(cls, name: str) -> "MiaData":
+    def from_name(cls, name: str) -> MiaData:
         try:
             X, y = load_dataset(name)
             return cls(X, y)
-        except Exception:
-            # 离线兜底：sklearn 不可用（零下载）时退化为纯 numpy 合成数据，保证系统仍可跑
+        except ImportError:
+            # 离线兜底：sklearn 不可用时退化为纯 numpy 合成数据。
+            # 只捕获 ImportError；其余异常必须可见，不静默掩盖 bug。
             from .generator import SyntheticMiaGenerator
-            gen = SyntheticMiaGenerator(n_features=64, n_classes=10, snr=1.2, class_spread=1.8, seed=0)
+
+            gen = SyntheticMiaGenerator(
+                n_features=64, n_classes=10, snr=1.2, class_spread=1.8, seed=0
+            )
             X, y = gen.generate(1200)
             return cls(X, y)
 
@@ -71,7 +75,10 @@ class MiaData:
         nmi = perm[n_train : n_train + n_non]
         rest = perm[n_train + n_non :]
         return (
-            self.X[mi], self.y[mi],
-            self.X[nmi], self.y[nmi],
-            self.X[rest], self.y[rest],
+            self.X[mi],
+            self.y[mi],
+            self.X[nmi],
+            self.y[nmi],
+            self.X[rest],
+            self.y[rest],
         )

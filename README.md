@@ -97,4 +97,13 @@ miaforge/
 ## 测试与 CI
 
 - `pytest`：确定性、离线兜底、攻击契约、CLI 冒烟（6 项全绿）。
-- CI（`.github/workflows/ci.yml`）：Python 3.11/3.12/3.13 矩阵 + ruff + pytest + demo 冒烟 + 密钥扫描。
+- CI（`.github/workflows/ci.yml`）：Python 3.11/3.12/3.13 矩阵 + **ruff 0.16.10（版本钉死）** + pytest + demo 冒烟 + 密钥扫描。
+- lint **阻塞式**：`ruff check .` 与 `ruff format --check .` 均为硬失败（v0.1.0 时代为 `|| true` 非阻塞，已修正）。规则集显式声明于 `pyproject.toml`，避免 ruff 升级导致默认规则漂移。
+
+## 复现 lint
+
+```bash
+pip install ruff==0.16.10
+ruff check .            # All checks passed!
+ruff format --check .   # 25 files already formatted
+```

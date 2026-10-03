@@ -6,4 +6,4 @@
 from .dataset import MiaData, load_dataset
 from .generator import SyntheticMiaGenerator
 
-__all__ = ["MiaData", "load_dataset", "SyntheticMiaGenerator"]
+__all__ = ["MiaData", "SyntheticMiaGenerator", "load_dataset"]

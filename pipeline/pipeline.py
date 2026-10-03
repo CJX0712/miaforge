@@ -17,13 +17,15 @@ from mia.metrics import optimal_threshold_balanced_accuracy, roc_auc
 from mia.target import NumpyMLP
 
 
-def _apply_label_noise(y: np.ndarray, rate: float, rng: np.random.Generator, n_classes: int) -> np.ndarray:
+def _apply_label_noise(
+    y: np.ndarray, rate: float, rng: np.random.Generator, n_classes: int
+) -> np.ndarray:
     """将确定比例 y 翻到另一类（训练集标签损坏，模型记住被损坏的记录）。"""
     y = y.copy()
     if rate <= 0 or n_classes < 2:
         return y
     n = y.shape[0]
-    k = int(round(rate * n))
+    k = round(rate * n)  # py3 round(float) 已返回 int，无需再 int() 包裹
     if k == 0:
         return y
     idx = rng.choice(n, size=k, replace=False)
@@ -38,9 +40,15 @@ def _source_split(cfg: MiaConfig, seed: int):
     真实数据集（digits/iris）走 MiaData；synthetic 走确定性高斯生成器。
     """
     if cfg.dataset == "synthetic":
-        gen_m = SyntheticMiaGenerator(cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 100)
-        gen_nm = SyntheticMiaGenerator(cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 200)
-        gen_pool = SyntheticMiaGenerator(cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 500)
+        gen_m = SyntheticMiaGenerator(
+            cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 100
+        )
+        gen_nm = SyntheticMiaGenerator(
+            cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 200
+        )
+        gen_pool = SyntheticMiaGenerator(
+            cfg.n_features, cfg.n_classes, cfg.snr, cfg.class_spread, seed=seed + 500
+        )
         Xm, ym = gen_m.generate(cfg.n_train)
         Xnm, ynm = gen_nm.generate(cfg.n_nonmember)
         Xp, yp = gen_pool.generate(cfg.shadow_pool)
@@ -62,10 +70,15 @@ def _train_shadow_data(cfg: MiaConfig, seed: int, Xpool: np.ndarray, ypool: np.n
         out_idx = perm[cfg.n_train : cfg.n_train + cfg.n_nonmember]
         X_in, y_in = Xpool[in_idx], ypool[in_idx]
         X_out, y_out = Xpool[out_idx], ypool[out_idx]
-        y_in_train = _apply_label_noise(y_in, cfg.member_label_noise, rng_noise, cfg.n_classes)
+        y_in_train = _apply_label_noise(
+            y_in, cfg.member_label_noise, rng_noise, cfg.n_classes
+        )
         shadow = NumpyMLP(
-            hidden=cfg.hidden, n_classes=cfg.n_classes,
-            epochs=cfg.epochs, lr=cfg.lr, seed=seed + 100 + m,
+            hidden=cfg.hidden,
+            n_classes=cfg.n_classes,
+            epochs=cfg.epochs,
+            lr=cfg.lr,
+            seed=seed + 100 + m,
         )
         shadow.fit(X_in, y_in_train)
         f_in = build_features(shadow, X_in, y_in)
@@ -101,7 +114,13 @@ def _protocol(cfg: MiaConfig, seed: int):
     # —— 目标模型：在全部成员上训练（synthetic 路径按 rate 注入错标）——
     rng_n = np.random.default_rng(seed + 3)
     ym_train = _apply_label_noise(ym, cfg.member_label_noise, rng_n, cfg.n_classes)
-    target = NumpyMLP(hidden=cfg.hidden, n_classes=cfg.n_classes, epochs=cfg.epochs, lr=cfg.lr, seed=seed + 2)
+    target = NumpyMLP(
+        hidden=cfg.hidden,
+        n_classes=cfg.n_classes,
+        epochs=cfg.epochs,
+        lr=cfg.lr,
+        seed=seed + 2,
+    )
     target.fit(Xm, ym_train)
 
     # —— 影子模型监督数据 ——
@@ -165,7 +184,9 @@ def _record_from_protocol(p: dict) -> SeedRecord:
 
 def _aggregate(records: list[SeedRecord], name: str) -> Aggregate:
     vals = np.array([r.methods[name] for r in records], dtype=np.float64)
-    return Aggregate(name=name, mean=float(vals.mean()), std=float(vals.std()), n=len(vals))
+    return Aggregate(
+        name=name, mean=float(vals.mean()), std=float(vals.std()), n=len(vals)
+    )
 
 
 def collect_failures(protocol: dict) -> list[dict]:
@@ -187,46 +208,61 @@ def collect_failures(protocol: dict) -> list[dict]:
     cases = []
     if false_neg:
         i = false_neg[0]
-        cases.append({
-            "type": "false_negative_member",
-            "desc": "真实成员被攻击判为非成员",
-            "loss": round(float(mat[i, 0]), 4),
-            "confidence": round(float(mat[i, 1]), 4),
-            "correct": int(mat[i, 4]),
-            "cause": "该成员样本处于类间重叠区或含噪声，目标模型未充分记忆，攻击按特征判为非成员",
-        })
+        cases.append(
+            {
+                "type": "false_negative_member",
+                "desc": "真实成员被攻击判为非成员",
+                "loss": round(float(mat[i, 0]), 4),
+                "confidence": round(float(mat[i, 1]), 4),
+                "correct": int(mat[i, 4]),
+                "cause": (
+                    "该成员样本处于类间重叠区或含噪声，"
+                    "目标模型未充分记忆，攻击按特征判为非成员"
+                ),
+            }
+        )
     if false_pos:
         i = false_pos[0]
-        cases.append({
-            "type": "false_positive_nonmember",
-            "desc": "真实非成员被攻击判为成员",
-            "loss": round(float(mat[i, 0]), 4),
-            "confidence": round(float(mat[i, 1]), 4),
-            "correct": int(mat[i, 4]),
-            "cause": "该非成员恰为易分样本，loss 与置信度接近典型成员，攻击难以区分",
-        })
+        cases.append(
+            {
+                "type": "false_positive_nonmember",
+                "desc": "真实非成员被攻击判为成员",
+                "loss": round(float(mat[i, 0]), 4),
+                "confidence": round(float(mat[i, 1]), 4),
+                "correct": int(mat[i, 4]),
+                "cause": (
+                    "该非成员恰为易分样本，loss 与置信度接近典型成员，攻击难以区分"
+                ),
+            }
+        )
     member_idx = np.where(labels == 1)[0]
     if member_idx.size:
         i = member_idx[int(np.argmax(mat[member_idx, 0]))]
-        cases.append({
-            "type": "high_loss_member",
-            "desc": "成员中 loss 最高者",
-            "loss": round(float(mat[i, 0]), 4),
-            "confidence": round(float(mat[i, 1]), 4),
-            "correct": int(mat[i, 4]),
-            "cause": "成员样本含高噪声或位于决策边界，目标模型似未记住 → 攻击判为非成员",
-        })
+        cases.append(
+            {
+                "type": "high_loss_member",
+                "desc": "成员中 loss 最高者",
+                "loss": round(float(mat[i, 0]), 4),
+                "confidence": round(float(mat[i, 1]), 4),
+                "correct": int(mat[i, 4]),
+                "cause": (
+                    "成员样本含高噪声或位于决策边界，目标模型似未记住 → 攻击判为非成员"
+                ),
+            }
+        )
     nm_idx = np.where(labels == 0)[0]
     if nm_idx.size:
         i = nm_idx[int(np.argmin(mat[nm_idx, 0]))]
-        cases.append({
-            "type": "low_loss_nonmember",
-            "desc": "非成员中 loss 最低者",
-            "loss": round(float(mat[i, 0]), 4),
-            "confidence": round(float(mat[i, 1]), 4),
-            "correct": int(mat[i, 4]),
-            "cause": "非成员恰为易分样本，loss 接近典型成员，攻击典型难例",
-        })
+        cases.append(
+            {
+                "type": "low_loss_nonmember",
+                "desc": "非成员中 loss 最低者",
+                "loss": round(float(mat[i, 0]), 4),
+                "confidence": round(float(mat[i, 1]), 4),
+                "correct": int(mat[i, 4]),
+                "cause": "非成员恰为易分样本，loss 接近典型成员，攻击典型难例",
+            }
+        )
     return cases[:6]
 
 
